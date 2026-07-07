@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { player } from '../player/engine';
 import { usePlayer } from '../player/usePlayer';
 
@@ -21,17 +21,19 @@ export function Transport() {
     return () => clearInterval(id);
   }, []);
 
+  const pct = duration > 0 ? Math.min(pos / duration, 1) * 100 : 0;
+
   return (
-    <div className="flex items-center gap-3 border-t border-neutral-800 bg-neutral-900 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className="flex items-center gap-3 border-t border-line bg-surface px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <button
         aria-label="Rewind to start"
         onClick={() => {
           player.seek(0);
           setPos(0);
         }}
-        className="flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition hover:bg-neutral-800 active:scale-95"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-muted transition hover:bg-raised hover:text-ivory active:scale-95"
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+        <svg viewBox="0 0 24 24" className="h-5.5 w-5.5 fill-current">
           <path d="M6 6h2v12H6zM20 6v12L9.5 12z" />
         </svg>
       </button>
@@ -40,7 +42,7 @@ export function Transport() {
         aria-label={playing ? 'Pause' : 'Play'}
         disabled={loadingPiano}
         onClick={() => player.togglePlay()}
-        className="flex h-13 w-13 items-center justify-center rounded-full bg-emerald-500 text-neutral-950 shadow-lg transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
+        className="flex h-13 w-13 items-center justify-center rounded-full bg-radial-[at_35%_30%] from-brass-2 to-brass to-70% text-lacquer shadow-[0_2px_14px_rgba(201,164,92,0.35)] transition hover:brightness-110 active:scale-95 disabled:opacity-60"
       >
         {loadingPiano ? (
           <svg viewBox="0 0 24 24" className="h-6 w-6 animate-spin">
@@ -51,14 +53,14 @@ export function Transport() {
             <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
           </svg>
         ) : (
-          <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+          <svg viewBox="0 0 24 24" className="ml-0.5 h-6 w-6 fill-current">
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
       </button>
 
-      <span className="w-24 shrink-0 text-center font-mono text-sm text-neutral-400">
-        {fmt(pos)} / {fmt(duration)}
+      <span className="w-26 shrink-0 text-center font-mono text-[0.8rem] tabular-nums text-muted">
+        {fmt(pos)} <span className="text-faint">/</span> {fmt(duration)}
       </span>
 
       <input
@@ -75,7 +77,8 @@ export function Transport() {
           setPos(t);
           player.seek(t);
         }}
-        className="h-11 min-w-0 flex-1 cursor-pointer accent-emerald-500"
+        style={{ '--pct': `${pct}%` } as CSSProperties}
+        className="scrub h-11 min-w-0 flex-1 cursor-pointer"
       />
     </div>
   );
