@@ -26,6 +26,14 @@ create table public.checkpoints (
 
 create index checkpoints_song_id_idx on public.checkpoints (song_id, position_seconds);
 
+-- ── Grants ────────────────────────────────────────────────────────────────
+-- RLS restricts which *rows* a user sees; the authenticated role still needs
+-- table-level privileges to touch the tables at all. Supabase does not always
+-- grant these automatically, so do it explicitly.
+
+grant select, insert, update, delete on public.songs to authenticated;
+grant select, insert, delete on public.checkpoints to authenticated;
+
 -- ── Row Level Security ────────────────────────────────────────────────────
 
 alter table public.songs enable row level security;
