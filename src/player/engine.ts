@@ -1,5 +1,6 @@
 import { SplendidGrandPiano } from 'smplr';
 import type { ParsedSong } from '../types';
+import { realDuration, scheduleTime, songTimeAt } from './timing';
 
 export interface PlayerSnapshot {
   playing: boolean;
@@ -7,10 +8,14 @@ export interface PlayerSnapshot {
   loadingPiano: boolean;
   songTitle: string | null;
   duration: number;
+  /** Playback rate: 1 = normal, 0.5 = half speed. Pitch is unaffected. */
+  rate: number;
 }
 
-const LOOKAHEAD_S = 0.3; // schedule notes this far ahead of the clock
+const LOOKAHEAD_S = 0.3; // schedule notes this far ahead, in song-seconds
 const TICK_MS = 100;
+const MIN_RATE = 0.25;
+const MAX_RATE = 2;
 
 /**
  * Playback engine, deliberately outside React. Time is derived from
@@ -26,6 +31,8 @@ class PlayerEngine {
   private song: ParsedSong | null = null;
   private playing = false;
   private loadingPiano = false;
+  /** Song-seconds elapsed per real second. Pitch is unaffected. */
+  private rate = 1;
 
   /** Song position (s) when playback last started, or current position while paused. */
   private posAtAnchor = 0;
@@ -40,6 +47,7 @@ class PlayerEngine {
     loadingPiano: false,
     songTitle: null,
     duration: 0,
+    rate: 1,
   };
 
   subscribe = (fn: () => void): (() => void) => {
@@ -55,6 +63,7 @@ class PlayerEngine {
       loadingPiano: this.loadingPiano,
       songTitle: this.song?.title ?? null,
       duration: this.song?.duration ?? 0,
+      rate: this.rate,
     };
     for (const fn of this.subs) fn();
   }
@@ -66,7 +75,7 @@ class PlayerEngine {
   /** Current song position in seconds. Safe to call every frame. */
   get time(): number {
     if (!this.playing || !this.ctx) return this.posAtAnchor;
-    const t = this.posAtAnchor + (this.ctx.currentTime - this.ctxAtAnchor);
+    const t = songTimeAt(this.posAtAnchor, this.ctx.currentTime, this.ctxAtAnchor, this.rate);
     return Math.min(Math.max(t, 0), this.song?.duration ?? 0);
   }
 
@@ -133,6 +142,25 @@ class PlayerEngine {
     else void this.play();
   }
 
+  /**
+   * Change playback speed. Re-anchors the clock so the current position holds,
+   * then reschedules upcoming notes at the new rate. Pitch is unaffected —
+   * only note spacing and hold time change.
+   */
+  setRate(rate: number) {
+    const clamped = Math.min(Math.max(rate, MIN_RATE), MAX_RATE);
+    if (this.playing && this.ctx) {
+      this.posAtAnchor = this.time; // capture position at the old rate first
+      this.ctxAtAnchor = this.ctx.currentTime;
+      this.piano?.stop();
+      this.rate = clamped;
+      this.nextIdx = this.firstNoteAt(this.posAtAnchor);
+    } else {
+      this.rate = clamped;
+    }
+    this.emit();
+  }
+
   /** Index of the first note with start >= t (notes are sorted by start). */
   private firstNoteAt(t: number): number {
     const notes = this.song!.notes;
@@ -153,12 +181,12 @@ class PlayerEngine {
 
     while (this.nextIdx < notes.length && notes[this.nextIdx].start < horizon) {
       const n = notes[this.nextIdx++];
-      const when = this.ctxAtAnchor + (n.start - this.posAtAnchor);
+      const when = scheduleTime(this.ctxAtAnchor, n.start, this.posAtAnchor, this.rate);
       if (when >= this.ctx.currentTime - 0.05) {
         this.piano.start({
           note: n.midi,
           time: when,
-          duration: n.duration,
+          duration: realDuration(n.duration, this.rate),
           velocity: 90,
         });
       }
