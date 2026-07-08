@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { ParsedSong } from './types';
 import { player } from './player/engine';
+import { usePlayer } from './player/usePlayer';
 import { useAuth } from './lib/useAuth';
+import { useWakeLock } from './lib/useWakeLock';
 import { AuthScreen } from './components/AuthScreen';
 import { Library } from './components/Library';
 import { PianoRoll } from './components/PianoRoll';
@@ -17,8 +19,11 @@ interface OpenSong {
 
 export default function App() {
   const { session, loading } = useAuth();
+  const { playing } = usePlayer();
   const [open, setOpen] = useState<OpenSong | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+
+  useWakeLock(playing);
 
   const openSong = (song: ParsedSong, songId?: string) => {
     player.load(song);

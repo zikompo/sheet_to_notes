@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#171717"/>
+  <!-- piano keys along the bottom -->
+  <g>
+    <rect x="64" y="360" width="384" height="120" rx="10" fill="#e9e6df"/>
+    <rect x="64" y="360" width="384" height="120" rx="10" fill="none" stroke="#0d0d0d" stroke-width="2"/>
+    <line x1="160" y1="360" x2="160" y2="480" stroke="#0d0d0d" stroke-width="3"/>
+    <line x1="256" y1="360" x2="256" y2="480" stroke="#0d0d0d" stroke-width="3"/>
+    <line x1="352" y1="360" x2="352" y2="480" stroke="#0d0d0d" stroke-width="3"/>
+    <rect x="132" y="360" width="40" height="74" rx="5" fill="#141414"/>
+    <rect x="228" y="360" width="40" height="74" rx="5" fill="#141414"/>
+    <rect x="324" y="360" width="40" height="74" rx="5" fill="#141414"/>
+  </g>
+  <!-- felt-red hit line -->
+  <rect x="64" y="352" width="384" height="8" rx="4" fill="#c62828"/>
+  <!-- two falling notes: right hand (green), left hand (blue) -->
+  <rect x="228" y="96" width="56" height="196" rx="18" fill="#9ccc50"/>
+  <rect x="150" y="176" width="56" height="120" rx="18" fill="#7e9fcc"/>
+</svg>
