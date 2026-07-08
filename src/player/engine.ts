@@ -10,6 +10,8 @@ export interface PlayerSnapshot {
   duration: number;
   /** Playback rate: 1 = normal, 0.5 = half speed. Pitch is unaffected. */
   rate: number;
+  /** Output volume, 0–1. */
+  volume: number;
 }
 
 const LOOKAHEAD_S = 0.3; // schedule notes this far ahead, in song-seconds
@@ -33,6 +35,8 @@ class PlayerEngine {
   private loadingPiano = false;
   /** Song-seconds elapsed per real second. Pitch is unaffected. */
   private rate = 1;
+  /** Output volume, 0–1 (mapped to smplr's 0–127 scale). */
+  private volume = 0.8;
 
   /** Song position (s) when playback last started, or current position while paused. */
   private posAtAnchor = 0;
@@ -48,6 +52,7 @@ class PlayerEngine {
     songTitle: null,
     duration: 0,
     rate: 1,
+    volume: 0.8,
   };
 
   subscribe = (fn: () => void): (() => void) => {
@@ -64,6 +69,7 @@ class PlayerEngine {
       songTitle: this.song?.title ?? null,
       duration: this.song?.duration ?? 0,
       rate: this.rate,
+      volume: this.volume,
     };
     for (const fn of this.subs) fn();
   }
@@ -94,6 +100,7 @@ class PlayerEngine {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.piano = new SplendidGrandPiano(this.ctx);
+      this.piano.output.setVolume(this.volume * 127);
     }
     if (this.ctx.state === 'suspended') await this.ctx.resume();
     if (!this.pianoReady) {
@@ -158,6 +165,13 @@ class PlayerEngine {
     } else {
       this.rate = clamped;
     }
+    this.emit();
+  }
+
+  /** Set output volume (0–1). Applies immediately if the piano exists. */
+  setVolume(volume: number) {
+    this.volume = Math.min(Math.max(volume, 0), 1);
+    this.piano?.output.setVolume(this.volume * 127);
     this.emit();
   }
 

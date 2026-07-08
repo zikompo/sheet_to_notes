@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { player } from '../player/engine';
 import { usePlayer } from '../player/usePlayer';
 import { SpeedControl } from './SpeedControl';
+import { VolumeControl } from './VolumeControl';
 
 function fmt(t: number): string {
   const m = Math.floor(t / 60);
@@ -79,6 +80,7 @@ export function Transport() {
         className="h-11 min-w-0 flex-1 cursor-pointer accent-emerald-500"
       />
 
+      <VolumeControl />
       <SpeedControl />
     </div>
   );
