@@ -12,6 +12,7 @@ import type { Hand, MeasureMark, NoteEvent, ParsedSong, TempoEvent } from '../ty
 
 interface RawNote {
   midi: number;
+  name: string;
   startQ: number;
   durQ: number;
   staff: number;
@@ -45,11 +46,22 @@ function numOf(el: Element, tag: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function pitchToMidi(pitch: Element): number {
+/** Spell an accidental as it appears in the score: -1 → "b", +1 → "#", ±2 doubled. */
+function accidental(alter: number): string {
+  if (alter <= -1) return 'b'.repeat(Math.min(-Math.round(alter), 2));
+  if (alter >= 1) return '#'.repeat(Math.min(Math.round(alter), 2));
+  return '';
+}
+
+/** MIDI number + the score's pitch-class spelling (e.g. "Ab", "F", "C#"). */
+function readPitch(pitch: Element): { midi: number; name: string } {
   const step = textOf(pitch, 'step') ?? 'C';
   const octave = numOf(pitch, 'octave') ?? 4;
   const alter = numOf(pitch, 'alter') ?? 0;
-  return (octave + 1) * 12 + (STEP_SEMITONES[step] ?? 0) + alter;
+  return {
+    midi: (octave + 1) * 12 + (STEP_SEMITONES[step] ?? 0) + alter,
+    name: step + accidental(alter),
+  };
 }
 
 function findFingering(note: Element): number | undefined {
@@ -190,8 +202,10 @@ export function parseMusicXML(xml: string, fallbackTitle = 'Untitled'): ParsedSo
           if (pitch) {
             const startQ = isChord ? lastNoteStartQ : posQ;
             const ties = childrenOf(el, 'tie');
+            const { midi, name } = readPitch(pitch);
             raw.push({
-              midi: pitchToMidi(pitch),
+              midi,
+              name,
               startQ,
               durQ,
               staff: numOf(el, 'staff') ?? 1,
@@ -227,6 +241,7 @@ export function parseMusicXML(xml: string, fallbackTitle = 'Untitled'): ParsedSo
       start,
       duration: qToSec(n.startQ + n.durQ) - start,
       hand,
+      name: n.name,
       ...(n.finger !== undefined ? { finger: n.finger } : {}),
       measure: n.measure,
     };

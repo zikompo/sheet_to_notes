@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { NoteEvent, ParsedSong } from '../types';
-import { computeRange, keyLayout, noteName, type KeyboardLayout } from '../lib/keyLayout';
+import { computeRange, keyLayout, noteName, pitchClass, type KeyboardLayout } from '../lib/keyLayout';
+import type { LabelMode } from '../lib/useLabelMode';
 import { player } from '../player/engine';
 
 const COLORS = {
@@ -15,10 +16,17 @@ const COLORS = {
   whiteKeyEdge: '#2b2b2b',
   blackKey: '#161616',
   label: '#8a8a8a',
-  finger: '#ffffff',
+  blockLabel: 'rgba(17,17,17,0.85)', // dark ink, reads on light note bodies
 };
 
 const VISIBLE_SECONDS = 3.5;
+
+/** Text to draw on a block for the current label mode, or '' for none. */
+function blockLabelText(n: NoteEvent, mode: LabelMode): string {
+  if (mode === 'names') return n.name ?? pitchClass(n.midi);
+  if (mode === 'fingers') return n.finger !== undefined ? String(n.finger) : '';
+  return '';
+}
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.min(r, w / 2, h / 2);
@@ -38,6 +46,7 @@ function drawFrame(
   cssW: number,
   cssH: number,
   now: number,
+  labelMode: LabelMode,
 ) {
   const { layout, maxDuration } = geo;
   const kbH = Math.min(Math.max(cssH * 0.24, 80), 170);
@@ -100,14 +109,24 @@ function drawFrame(
     roundRect(ctx, x, yTop, w, h, 6);
     ctx.fill();
 
-    if (n.finger !== undefined && w >= 9 && h >= 18) {
-      const size = Math.min(w * 0.75, 17);
-      ctx.fillStyle = COLORS.finger;
+    const text = blockLabelText(n, labelMode);
+    if (text && h >= 18) {
+      // Fit the (1–2 char) label to the block width, but skip if it'd be too tiny.
+      let size = Math.min(w * 0.72, 16);
       ctx.font = `600 ${size}px system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const ty = Math.max(Math.min(yBottom - size * 0.9, laneH - size), yTop + size * 0.9);
-      ctx.fillText(String(n.finger), x + w / 2, ty);
+      const maxTextW = w - 4;
+      const measured = ctx.measureText(text).width;
+      if (measured > maxTextW) {
+        size *= maxTextW / measured;
+        ctx.font = `600 ${size}px system-ui, sans-serif`;
+      }
+      if (size >= 8) {
+        ctx.fillStyle = COLORS.blockLabel;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const ty = Math.max(Math.min(yBottom - size * 0.9, laneH - size), yTop + size * 0.9);
+        ctx.fillText(text, x + w / 2, ty);
+      }
     }
 
     // glow where an active note crosses the hit line
@@ -166,9 +185,13 @@ function lowerBound(notes: NoteEvent[], t: number): number {
   return lo;
 }
 
-export function PianoRoll({ song }: { song: ParsedSong }) {
+export function PianoRoll({ song, labelMode }: { song: ParsedSong; labelMode: LabelMode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Read by the rAF loop each frame so toggling the mode doesn't restart it.
+  const labelModeRef = useRef(labelMode);
+  labelModeRef.current = labelMode;
 
   const geo = useMemo<Geometry>(() => {
     const { lo, hi } = computeRange(song.notes);
@@ -201,7 +224,7 @@ export function PianoRoll({ song }: { song: ParsedSong }) {
     resize();
 
     const loop = () => {
-      if (cssW > 0 && cssH > 0) drawFrame(ctx, song, geo, cssW, cssH, player.time);
+      if (cssW > 0 && cssH > 0) drawFrame(ctx, song, geo, cssW, cssH, player.time, labelModeRef.current);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

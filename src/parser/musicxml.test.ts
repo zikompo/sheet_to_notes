@@ -63,6 +63,13 @@ describe('parseMusicXML — two-hand piano score', () => {
     expect(song.duration).toBe(6.0);
     expect(song.measures.map((m) => m.startTime)).toEqual([0, 2.0, 4.0]);
   });
+
+  it('spells natural pitch names (no octave)', () => {
+    const rh = song.notes.filter((n) => n.hand === 'right');
+    expect(rh.map((n) => n.name)).toEqual(['C', 'D', 'E', 'F', 'C', 'E', 'G']);
+    // left hand: C3, G2, C3
+    expect(song.notes.filter((n) => n.hand === 'left').map((n) => n.name)).toEqual(['C', 'G', 'C']);
+  });
 });
 
 describe('parseMusicXML — tempo changes', () => {
@@ -80,6 +87,10 @@ describe('parseMusicXML — tempo changes', () => {
     expect(song.notes.map((n) => n.start)).toEqual([0, 1, 2, 3, 4, 4.5, 5, 5.5]);
     expect(song.notes[7].midi).toBe(73); // C#5 via <alter>
     expect(song.duration).toBe(6.0);
+  });
+
+  it('spells the altered note from the score (# for alter=1)', () => {
+    expect(song.notes[7].name).toBe('C#');
   });
 
   it('defaults to the right hand for single-staff scores', () => {

@@ -68,3 +68,11 @@ export function noteName(midi: number): string {
   const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   return `${names[midi % 12]}${Math.floor(midi / 12) - 1}`;
 }
+
+const PITCH_CLASS_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+/** Pitch class (no octave) from a MIDI number, spelled with flats. Fallback
+ *  label for notes parsed before score spelling was preserved. */
+export function pitchClass(midi: number): string {
+  return PITCH_CLASS_FLAT[((midi % 12) + 12) % 12];
+}

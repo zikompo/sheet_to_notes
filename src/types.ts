@@ -9,6 +9,9 @@ export interface NoteEvent {
   duration: number;
   /** staff 1 → right, staff 2+ → left */
   hand: Hand;
+  /** Pitch-class spelling from the score, e.g. "F", "Ab", "C#". Absent on
+   *  songs parsed before spelling was preserved — fall back to pitchClass(midi). */
+  name?: string;
   /** Fingering (1–5) when the score provides it */
   finger?: number;
   /** 0-based measure index the note starts in */

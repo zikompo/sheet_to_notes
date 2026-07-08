@@ -4,6 +4,7 @@ import { player } from './player/engine';
 import { usePlayer } from './player/usePlayer';
 import { useAuth } from './lib/useAuth';
 import { useWakeLock } from './lib/useWakeLock';
+import { useLabelMode, type LabelMode } from './lib/useLabelMode';
 import { AuthScreen } from './components/AuthScreen';
 import { Library } from './components/Library';
 import { PianoRoll } from './components/PianoRoll';
@@ -17,9 +18,16 @@ interface OpenSong {
   songId?: string;
 }
 
+const LABEL_TEXT: Record<LabelMode, string> = {
+  names: 'Names',
+  fingers: 'Fingers',
+  off: 'Labels off',
+};
+
 export default function App() {
   const { session, loading } = useAuth();
   const { playing } = usePlayer();
+  const { labelMode, cycle } = useLabelMode();
   const [open, setOpen] = useState<OpenSong | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
@@ -64,6 +72,20 @@ export default function App() {
           {song.title}
         </h1>
         <button
+          onClick={cycle}
+          aria-label={`Note labels: ${LABEL_TEXT[labelMode]} (tap to change)`}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:bg-neutral-800 ${
+            labelMode === 'off' ? 'text-neutral-500' : 'text-emerald-300'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="1.6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 18V6l10-2v12" />
+            <circle cx="6.5" cy="18" r="2.5" />
+            <circle cx="16.5" cy="16" r="2.5" />
+          </svg>
+          {LABEL_TEXT[labelMode]}
+        </button>
+        <button
           onClick={() => setShowDebug((v) => !v)}
           aria-label="Show parsed notes"
           className="rounded-full px-3 py-1.5 font-mono text-sm text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
@@ -72,7 +94,7 @@ export default function App() {
         </button>
       </header>
 
-      <PianoRoll song={song} />
+      <PianoRoll song={song} labelMode={labelMode} />
       {songId && <CheckpointBar songId={songId} />}
       <Transport />
 
