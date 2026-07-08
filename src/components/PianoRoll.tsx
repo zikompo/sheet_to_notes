@@ -3,20 +3,19 @@ import type { NoteEvent, ParsedSong } from '../types';
 import { computeRange, keyLayout, noteName, type KeyboardLayout } from '../lib/keyLayout';
 import { player } from '../player/engine';
 
-// After-hours concert hall palette — keep in sync with @theme in index.css.
 const COLORS = {
-  laneBg: '#1a1613',
-  grid: 'rgba(236,228,212,0.05)',
-  hitLine: '#b8452f', // felt red
-  right: '#9cc558', // green, like Synthesia's right hand
-  rightActive: '#cfe9a0',
-  left: '#7d9dd1', // blue
-  leftActive: '#b3ccf0',
-  whiteKey: '#ece4d4',
-  whiteKeyEdge: '#2b251e',
-  blackKey: '#141110',
-  label: '#93887a',
-  finger: '#fffdf7',
+  laneBg: '#212121',
+  grid: 'rgba(255,255,255,0.055)',
+  hitLine: '#c62828',
+  right: '#9ccc50', // green, like Synthesia's right hand
+  rightActive: '#c5e88a',
+  left: '#7e9fcc', // blue
+  leftActive: '#adc8e8',
+  whiteKey: '#f5f3ef',
+  whiteKeyEdge: '#2b2b2b',
+  blackKey: '#161616',
+  label: '#8a8a8a',
+  finger: '#ffffff',
 };
 
 const VISIBLE_SECONDS = 3.5;
