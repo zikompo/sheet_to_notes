@@ -1,34 +1,59 @@
 import { useState } from 'react';
 import type { ParsedSong } from './types';
 import { player } from './player/engine';
-import { SongLoader } from './components/SongLoader';
+import { useAuth } from './lib/useAuth';
+import { AuthScreen } from './components/AuthScreen';
+import { Library } from './components/Library';
 import { PianoRoll } from './components/PianoRoll';
 import { Transport } from './components/Transport';
+import { CheckpointBar } from './components/CheckpointBar';
 import { DebugPanel } from './components/DebugPanel';
 
+interface OpenSong {
+  song: ParsedSong;
+  /** Set for library songs — enables persisted checkpoints. */
+  songId?: string;
+}
+
 export default function App() {
-  const [song, setSong] = useState<ParsedSong | null>(null);
+  const { session, loading } = useAuth();
+  const [open, setOpen] = useState<OpenSong | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
-  const loadSong = (s: ParsedSong) => {
-    player.load(s);
-    setSong(s);
+  const openSong = (song: ParsedSong, songId?: string) => {
+    player.load(song);
+    setOpen({ song, songId });
   };
 
-  if (!song) return <SongLoader onSong={loadSong} />;
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-neutral-500">Loading…</p>
+      </div>
+    );
+  }
 
+  if (!open) {
+    return session ? (
+      <Library session={session} onOpen={openSong} />
+    ) : (
+      <AuthScreen onLocalSong={openSong} />
+    );
+  }
+
+  const { song, songId } = open;
   return (
     <div className="relative flex h-full flex-col">
       <header className="flex items-center gap-3 border-b border-neutral-800 bg-neutral-900 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <button
           onClick={() => {
             player.pause();
-            setSong(null);
+            setOpen(null);
             setShowDebug(false);
           }}
           className="rounded-full px-3 py-1.5 text-sm text-neutral-400 transition hover:bg-neutral-800 hover:text-neutral-200"
         >
-          ‹ Songs
+          ‹ {session ? 'Library' : 'Back'}
         </button>
         <h1 className="min-w-0 flex-1 truncate text-center text-sm font-semibold text-neutral-200">
           {song.title}
@@ -43,6 +68,7 @@ export default function App() {
       </header>
 
       <PianoRoll song={song} />
+      {songId && <CheckpointBar songId={songId} />}
       <Transport />
 
       {showDebug && <DebugPanel song={song} onClose={() => setShowDebug(false)} />}
